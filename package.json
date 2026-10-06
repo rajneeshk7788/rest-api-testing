@@ -5,7 +5,8 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "dev": "nodemon app.js"
+    "dev": "nodemon app.js",
+    "test": "node --test"
   },
   "repository": {
     "type": "git",
@@ -20,7 +21,11 @@
   },
   "homepage": "https://github.com/rajneeshk7788/user-collection#readme",
   "dependencies": {
+    "dotenv": "^18.0.5",
     "express": "^5.2.1",
+    "mongoose": "^9.11.0"
+  },
+  "devDependencies": {
     "nodemon": "^3.1.14"
   }
 }
