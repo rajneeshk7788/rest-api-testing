@@ -1,14 +1,19 @@
 const { Pool } = require('pg');
 
+const databaseUrl = process.env.DATABASE_URL;
+const isLocalhost = databaseUrl && (databaseUrl.includes('localhost') || databaseUrl.includes('127.0.0.1'));
+const requiresSsl = process.env.NODE_ENV === 'production' || (databaseUrl && !isLocalhost);
+
 const poolConfig = {
   max: Number(process.env.PG_POOL_MAX) || 20,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
+  connectionTimeoutMillis: 10000,
+  ...(requiresSsl ? { ssl: { rejectUnauthorized: false } } : {}),
 };
 
 const pool = new Pool(
-  process.env.DATABASE_URL
-    ? { connectionString: process.env.DATABASE_URL, ...poolConfig }
+  databaseUrl
+    ? { connectionString: databaseUrl, ...poolConfig }
     : {
         host: process.env.PGHOST || '127.0.0.1',
         port: Number(process.env.PGPORT) || 5432,
@@ -28,6 +33,12 @@ async function query(text, params) {
 }
 
 async function initDb() {
+  if (process.env.NODE_ENV === 'production' && !databaseUrl && !process.env.PGHOST) {
+    throw new Error(
+      'Missing DATABASE_URL environment variable. Please set DATABASE_URL in your hosting provider (e.g., Render Dashboard).'
+    );
+  }
+
   const initSql = `
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
