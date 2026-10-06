@@ -1,5 +1,4 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const User = require('../models/User');
 
 const router = express.Router();
@@ -52,19 +51,21 @@ function parseUserInput(body, partial = false) {
 }
 
 function validateId(req, res, next) {
-  if (!mongoose.isObjectIdOrHexString(req.params.id)) {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
     return res.status(400).json({ error: 'Invalid user id' });
   }
+  req.userId = id;
   return next();
 }
 
 router.get('/', async (req, res) => {
-  const users = await User.find().sort({ createdAt: -1 }).lean();
+  const users = await User.findAll();
   res.json({ data: users });
 });
 
 router.get('/:id', validateId, async (req, res) => {
-  const user = await User.findById(req.params.id).lean();
+  const user = await User.findById(req.userId);
   if (!user) {
     return res.status(404).json({ error: 'User not found' });
   }
@@ -78,10 +79,7 @@ router.post('/', async (req, res) => {
 
 router.patch('/:id', validateId, async (req, res) => {
   const changes = parseUserInput(req.body, true);
-  const user = await User.findByIdAndUpdate(req.params.id, changes, {
-    returnDocument: 'after',
-    runValidators: true,
-  });
+  const user = await User.updateById(req.userId, changes);
   if (!user) {
     return res.status(404).json({ error: 'User not found' });
   }
@@ -89,7 +87,7 @@ router.patch('/:id', validateId, async (req, res) => {
 });
 
 router.delete('/:id', validateId, async (req, res) => {
-  const user = await User.findByIdAndDelete(req.params.id);
+  const user = await User.deleteById(req.userId);
   if (!user) {
     return res.status(404).json({ error: 'User not found' });
   }
